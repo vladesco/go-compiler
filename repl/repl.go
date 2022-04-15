@@ -3,7 +3,7 @@ package repl
 import (
 	"bufio"
 	"compiler/lexer"
-	"compiler/token"
+	"compiler/parser"
 	"fmt"
 	"io"
 )
@@ -21,11 +21,10 @@ func Start(in io.Reader, out io.Writer) {
 			return
 		}
 
-		lexerInstance := lexer.New(scanner.Text())
+		parserInstance := parser.New(lexer.New(scanner.Text()))
 
-		for nextToken := lexerInstance.ReadNextToken(); nextToken.Type != token.EOF; nextToken = lexerInstance.ReadNextToken() {
-			fmt.Printf("%+v\n", nextToken)
-		}
+		fmt.Printf("%+v\n", parserInstance.ParseProgram())
+
 	}
 
 }
