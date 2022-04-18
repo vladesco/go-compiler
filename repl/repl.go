@@ -23,7 +23,8 @@ func Start(in io.Reader, out io.Writer) {
 
 		parserInstance := parser.New(lexer.New(scanner.Text()))
 
-		fmt.Printf("%+v\n", parserInstance.ParseProgram())
+		fmt.Print(parserInstance.ParseProgram().ToString(), "\n")
+		fmt.Print("errors:", parserInstance.GetParsingErrors(), "\n")
 
 	}
 
