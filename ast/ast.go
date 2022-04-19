@@ -89,6 +89,21 @@ func (statement *ExpressionStatement) ToString() string {
 
 func (statement *ExpressionStatement) GetStatementNode() {}
 
+type BlockStatement struct {
+	BaseNode
+	Statements []Statement
+}
+
+func (statement *BlockStatement) ToString() string {
+	var output bytes.Buffer
+
+	for _, subStatement := range statement.Statements {
+		output.WriteString(subStatement.ToString())
+	}
+
+	return output.String()
+}
+
 type Identifier struct {
 	BaseNode
 	Value string
@@ -110,6 +125,42 @@ func (literal *IntegerLiteral) ToString() string {
 }
 
 func (literal *IntegerLiteral) GetExpressionNode() {}
+
+type Boolean struct {
+	BaseNode
+	Value bool
+}
+
+func (boolean *Boolean) ToString() string {
+	return boolean.Token.Literal
+}
+
+func (boolean *Boolean) GetExpressionNode() {}
+
+type IfExpression struct {
+	BaseNode
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (expression *IfExpression) ToString() string {
+	var output bytes.Buffer
+
+	output.WriteString("if")
+	output.WriteString(expression.Condition.ToString())
+	output.WriteString(" ")
+	output.WriteString(expression.Consequence.ToString())
+
+	if expression.Alternative != nil {
+		output.WriteString("else ")
+		output.WriteString((expression.Alternative.ToString()))
+	}
+
+	return output.String()
+}
+
+func (expression *IfExpression) GetExpressionNode() {}
 
 type PrefixExpression struct {
 	BaseNode

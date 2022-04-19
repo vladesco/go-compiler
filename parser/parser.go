@@ -76,19 +76,6 @@ func (parser *Parser) GetParsingErrors() []string {
 	return parser.errors
 }
 
-func (parser *Parser) registerPrefixParseFn(tokenType token.TokenType, fn prefixParseFn) {
-	parser.prefixParseFns[tokenType] = fn
-}
-
-func (parser *Parser) registerInfixParseFn(tokenType token.TokenType, fn infixParseFn) {
-	parser.infixParseFns[tokenType] = fn
-}
-
-func (parser *Parser) readNextToken() {
-	parser.currentToken = parser.peekToken
-	parser.peekToken = parser.lexer.ReadNextToken()
-}
-
 func (parser *Parser) parseStatement() ast.Statement {
 	switch parser.currentToken.Type {
 	case token.LET:
@@ -160,7 +147,7 @@ func (parser *Parser) parseExpression(precendance int) ast.Expression {
 
 	leftExp := prefixFn()
 
-	for !parser.readNextTokenIfPeekExpect(token.SEMICOLON) && precendance < parser.peekTokenPrecedence() {
+	for precendance < parser.peekTokenPrecedence() {
 		infixFn := parser.infixParseFns[parser.peekToken.Type]
 
 		if infixFn == nil {
@@ -196,6 +183,75 @@ func (parser *Parser) parseIntegerLiteral() ast.Expression {
 	literal.Value = value
 
 	return literal
+}
+
+func (parser *Parser) parseBoolean() ast.Expression {
+	expression := &ast.Boolean{
+		BaseNode: ast.BaseNode{Token: parser.currentToken},
+		Value:    parser.expectCurrentToken(token.TRUE),
+	}
+
+	return expression
+}
+
+func (parser *Parser) parseGroupedExpression() ast.Expression {
+	parser.readNextToken()
+	expression := parser.parseExpression(LOWEST)
+
+	if !parser.readNextTokenIfPeekExpect(token.RPAREN) {
+		return nil
+	}
+
+	return expression
+}
+
+func (parser *Parser) parseIfExpression() ast.Expression {
+	expression := &ast.IfExpression{
+		BaseNode: ast.BaseNode{Token: parser.currentToken},
+	}
+
+	if !parser.readNextTokenIfPeekExpect(token.LPAREN) {
+		return nil
+	}
+
+	expression.Condition = parser.parseGroupedExpression()
+
+	if !parser.readNextTokenIfPeekExpect(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = parser.parseBlockStatement()
+
+	if parser.readNextTokenIfPeekExpect(token.ELSE) {
+
+		if !parser.readNextTokenIfPeekExpect(token.LBRACE) {
+			return nil
+		}
+
+		expression.Alternative = parser.parseBlockStatement()
+	}
+
+	return expression
+}
+
+func (parser *Parser) parseBlockStatement() *ast.BlockStatement {
+	statement := &ast.BlockStatement{
+		BaseNode: ast.BaseNode{Token: parser.currentToken},
+	}
+
+	parser.readNextToken()
+
+	for !(parser.expectCurrentToken(token.RBRACE) || parser.expectCurrentToken(token.EOF)) {
+		subStatement := parser.parseStatement()
+
+		if subStatement != nil {
+			statement.Statements = append(statement.Statements, subStatement)
+		}
+
+		parser.readNextToken()
+	}
+
+	return statement
 }
 
 func (parser *Parser) parsePrefixExpression() ast.Expression {
@@ -248,6 +304,11 @@ func (parser *Parser) peekTokenPrecedence() int {
 	return LOWEST
 }
 
+func (parser *Parser) readNextToken() {
+	parser.currentToken = parser.peekToken
+	parser.peekToken = parser.lexer.ReadNextToken()
+}
+
 func (parser *Parser) readNextTokenIfPeekExpect(tokenType token.TokenType) bool {
 
 	if parser.peekToken.Type == tokenType {
@@ -264,12 +325,24 @@ func (parser *Parser) writeError(errorMessage string) {
 	parser.errors = append(parser.errors, errorMessage)
 }
 
+func (parser *Parser) registerPrefixParseFn(tokenType token.TokenType, fn prefixParseFn) {
+	parser.prefixParseFns[tokenType] = fn
+}
+
+func (parser *Parser) registerInfixParseFn(tokenType token.TokenType, fn infixParseFn) {
+	parser.infixParseFns[tokenType] = fn
+}
+
 func (parser *Parser) initialize() {
 	parser.currentToken = parser.lexer.ReadNextToken()
 	parser.peekToken = parser.lexer.ReadNextToken()
 
 	parser.registerPrefixParseFn(token.IDENT, parser.parseIdentifier)
 	parser.registerPrefixParseFn(token.INT, parser.parseIntegerLiteral)
+	parser.registerPrefixParseFn(token.FALSE, parser.parseBoolean)
+	parser.registerPrefixParseFn(token.TRUE, parser.parseBoolean)
+	parser.registerPrefixParseFn(token.LPAREN, parser.parseGroupedExpression)
+	parser.registerPrefixParseFn(token.IF, parser.parseIfExpression)
 	parser.registerPrefixParseFn(token.BANG, parser.parsePrefixExpression)
 	parser.registerPrefixParseFn(token.MINUS, parser.parsePrefixExpression)
 
