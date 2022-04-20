@@ -6,6 +6,7 @@ import (
 	"compiler/parser"
 	"fmt"
 	"io"
+	"strings"
 )
 
 const PROMPT = ">>"
@@ -22,10 +23,14 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		parserInstance := parser.New(lexer.New(scanner.Text()))
+		program := parserInstance.ParseProgram()
+		errors := parserInstance.GetParsingErrors()
 
-		fmt.Print(parserInstance.ParseProgram().ToString(), "\n")
-		fmt.Print("errors:", parserInstance.GetParsingErrors(), "\n")
+		if len(errors) > 0 {
+			fmt.Print(strings.Join(errors, "\n"), "\n")
+			continue
+		}
 
+		fmt.Print(program.ToString(), "\n")
 	}
-
 }

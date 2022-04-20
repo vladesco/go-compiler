@@ -33,6 +33,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 type Parser struct {
@@ -105,7 +106,10 @@ func (parser *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	for !parser.expectCurrentToken(token.SEMICOLON) {
+	parser.readNextToken()
+	statement.Value = parser.parseExpression(LOWEST)
+
+	if parser.expectPeekToken(token.SEMICOLON) {
 		parser.readNextToken()
 	}
 
@@ -280,6 +284,103 @@ func (parser *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
+func (parser *Parser) parseFunctionLiteral() ast.Expression {
+	parser.readNextToken()
+
+	literal := &ast.FunctionLiteral{
+		BaseNode: ast.BaseNode{
+			Token: parser.currentToken,
+		},
+	}
+
+	if !parser.readNextTokenIfPeekExpect(token.LPAREN) {
+		return nil
+	}
+
+	literal.Parameters = parser.parseParameters()
+
+	if !parser.readNextTokenIfPeekExpect(token.LBRACE) {
+		return nil
+	}
+
+	literal.Body = parser.parseBlockStatement()
+
+	return literal
+}
+
+func (parser *Parser) parseParameters() []*ast.Identifier {
+	parameters := []*ast.Identifier{}
+
+	parser.readNextToken()
+
+	if parser.expectCurrentToken(token.RPAREN) {
+		return parameters
+	}
+
+	parameters = append(parameters, &ast.Identifier{
+		BaseNode: ast.BaseNode{
+			Token: parser.currentToken,
+		},
+		Value: parser.currentToken.Literal,
+	})
+
+	for parser.expectPeekToken(token.COMMA) {
+
+		parser.readNextToken()
+		parser.readNextToken()
+
+		parameters = append(parameters, &ast.Identifier{
+			BaseNode: ast.BaseNode{
+				Token: parser.currentToken,
+			},
+			Value: parser.currentToken.Literal,
+		})
+	}
+
+	if !parser.readNextTokenIfPeekExpect(token.RPAREN) {
+		return nil
+	}
+
+	return parameters
+}
+
+func (parser *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	expression := &ast.CallExpression{
+		BaseNode: ast.BaseNode{
+			Token: parser.currentToken,
+		},
+		Function: function,
+	}
+
+	expression.Arguments = parser.parseArguments()
+
+	return expression
+}
+
+func (parser *Parser) parseArguments() []ast.Expression {
+	arguments := []ast.Expression{}
+
+	parser.readNextToken()
+
+	if parser.expectCurrentToken(token.RPAREN) {
+		return arguments
+	}
+
+	arguments = append(arguments, parser.parseExpression(LOWEST))
+
+	for parser.expectPeekToken(token.COMMA) {
+		parser.readNextToken()
+		parser.readNextToken()
+		arguments = append(arguments, parser.parseExpression(LOWEST))
+	}
+
+	if !parser.readNextTokenIfPeekExpect(token.RPAREN) {
+		return nil
+	}
+
+	return arguments
+}
+
 func (parser *Parser) expectCurrentToken(tokenType token.TokenType) bool {
 	return parser.currentToken.Type == tokenType
 }
@@ -343,9 +444,11 @@ func (parser *Parser) initialize() {
 	parser.registerPrefixParseFn(token.TRUE, parser.parseBoolean)
 	parser.registerPrefixParseFn(token.LPAREN, parser.parseGroupedExpression)
 	parser.registerPrefixParseFn(token.IF, parser.parseIfExpression)
+	parser.registerPrefixParseFn(token.FUNCTION, parser.parseFunctionLiteral)
 	parser.registerPrefixParseFn(token.BANG, parser.parsePrefixExpression)
 	parser.registerPrefixParseFn(token.MINUS, parser.parsePrefixExpression)
 
+	parser.registerInfixParseFn(token.LPAREN, parser.parseCallExpression)
 	parser.registerInfixParseFn(token.PLUS, parser.parseInfixExpression)
 	parser.registerInfixParseFn(token.MINUS, parser.parseInfixExpression)
 	parser.registerInfixParseFn(token.SLASH, parser.parseInfixExpression)
