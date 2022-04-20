@@ -62,13 +62,15 @@ func (lexer *Lexer) ReadNextToken() token.Token {
 
 	case '=':
 		if lexer.peekChar() == '=' {
+			lexer.readNextChar()
 			nextToken = token.New(token.EQ, "==")
 		} else {
 			nextToken = token.New(token.ASSIGN, "=")
 		}
 	case '!':
 		if lexer.peekChar() == '-' {
-			nextToken = token.New(token.NOT_EQ, "==")
+			lexer.readNextChar()
+			nextToken = token.New(token.NOT_EQ, "!=")
 		} else {
 			nextToken = token.New(token.BANG, "!")
 		}
