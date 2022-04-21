@@ -68,7 +68,7 @@ func (lexer *Lexer) ReadNextToken() token.Token {
 			nextToken = token.New(token.ASSIGN, "=")
 		}
 	case '!':
-		if lexer.peekChar() == '-' {
+		if lexer.peekChar() == '=' {
 			lexer.readNextChar()
 			nextToken = token.New(token.NOT_EQ, "!=")
 		} else {

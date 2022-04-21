@@ -120,10 +120,8 @@ func (parser *Parser) parseReturnStatement() *ast.ReturnStatement {
 	statement := &ast.ReturnStatement{BaseNode: ast.BaseNode{Token: parser.currentToken}}
 
 	parser.readNextToken()
-
-	for !parser.expectCurrentToken(token.SEMICOLON) {
-		parser.readNextToken()
-	}
+	statement.Value = parser.parseExpression(LOWEST)
+	parser.readNextTokenIfPeekExpect(token.SEMICOLON)
 
 	return statement
 }
@@ -151,7 +149,7 @@ func (parser *Parser) parseExpression(precendance int) ast.Expression {
 
 	leftExp := prefixFn()
 
-	for precendance < parser.peekTokenPrecedence() {
+	for !parser.expectPeekToken(token.SEMICOLON) && precendance < parser.peekTokenPrecedence() {
 		infixFn := parser.infixParseFns[parser.peekToken.Type]
 
 		if infixFn == nil {
@@ -226,7 +224,8 @@ func (parser *Parser) parseIfExpression() ast.Expression {
 
 	expression.Consequence = parser.parseBlockStatement()
 
-	if parser.readNextTokenIfPeekExpect(token.ELSE) {
+	if parser.expectPeekToken(token.ELSE) {
+		parser.readNextToken()
 
 		if !parser.readNextTokenIfPeekExpect(token.LBRACE) {
 			return nil

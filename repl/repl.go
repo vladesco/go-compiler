@@ -2,6 +2,7 @@ package repl
 
 import (
 	"bufio"
+	"compiler/evaluator"
 	"compiler/lexer"
 	"compiler/parser"
 	"fmt"
@@ -31,6 +32,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		fmt.Print(program.ToString(), "\n")
+		fmt.Print(evaluator.Eval(program), "\n")
 	}
 }
