@@ -85,6 +85,9 @@ func (parser *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return parser.parseReturnStatement()
 
+	case token.FUNCTION:
+		return parser.parseFunctionStatement()
+
 	default:
 		return parser.parseExpressionStatement()
 	}
@@ -283,9 +286,29 @@ func (parser *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
-func (parser *Parser) parseFunctionLiteral() ast.Expression {
-	parser.readNextToken()
+func (parser *Parser) parseFunctionStatement() *ast.LetStatement {
+	literal := &ast.LetStatement{
+		BaseNode: ast.BaseNode{
+			Token: parser.currentToken,
+		},
+	}
 
+	if parser.expectPeekToken(token.IDENT) {
+		parser.readNextToken()
+
+		literal.Name = &ast.Identifier{
+			BaseNode: ast.BaseNode{Token: parser.currentToken},
+			Value:    parser.currentToken.Literal,
+		}
+
+	}
+
+	literal.Value = parser.parseFunctionLiteral()
+
+	return literal
+}
+
+func (parser *Parser) parseFunctionLiteral() ast.Expression {
 	literal := &ast.FunctionLiteral{
 		BaseNode: ast.BaseNode{
 			Token: parser.currentToken,

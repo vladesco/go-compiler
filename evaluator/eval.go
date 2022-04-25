@@ -30,6 +30,39 @@ func Eval(node ast.Node, environment *object.Environment) object.Object {
 	case *ast.Boolean:
 		return convertBoolToBooleanObject(node.Value)
 
+	case *ast.FunctionLiteral:
+		return &object.Function{
+			Parameters:  node.Parameters,
+			Body:        node.Body,
+			Environment: environment,
+		}
+
+	case *ast.CallExpression:
+		extendedEnvironment := environment.Extend()
+		fn := Eval(node.Function, extendedEnvironment)
+
+		if isError(fn) {
+			return fn
+		}
+
+		function, ok := fn.(*object.Function)
+
+		if !ok {
+			return newError(fmt.Sprintf("not a function: %s", function.GetObjectType()))
+		}
+
+		arguments := evalArguments(node.Arguments, extendedEnvironment)
+
+		if len(arguments) == 1 && isError(arguments[0]) {
+			return arguments[0]
+		}
+
+		for index, argument := range arguments {
+			extendedEnvironment.Set(function.Parameters[index].Value, argument)
+		}
+
+		return unwrapReturnValue(evalBlockStatements(function.Body, extendedEnvironment))
+
 	case *ast.LetStatement:
 		value := Eval(node.Value, environment)
 
@@ -116,6 +149,22 @@ func evalBlockStatements(blockStatement *ast.BlockStatement, environment *object
 		if result.GetObjectType() == object.RETURN_VALUE_OBJ || result.GetObjectType() == object.ERROR_OBJ {
 			return result
 		}
+	}
+
+	return result
+}
+
+func evalArguments(arguments []ast.Expression, environment *object.Environment) []object.Object {
+	var result []object.Object
+
+	for _, argument := range arguments {
+		resultArgument := Eval(argument, environment)
+
+		if isError(resultArgument) {
+			return []object.Object{resultArgument}
+		}
+
+		result = append(result, resultArgument)
 	}
 
 	return result
@@ -262,4 +311,11 @@ func isError(error object.Object) bool {
 		return error.GetObjectType() == object.ERROR_OBJ
 	}
 	return false
+}
+
+func unwrapReturnValue(returnObject object.Object) object.Object {
+	if returnValue, ok := returnObject.(*object.ReturnValue); ok {
+		return returnValue.Value
+	}
+	return returnObject
 }
