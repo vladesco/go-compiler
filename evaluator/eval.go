@@ -19,7 +19,7 @@ func Eval(node ast.Node, environment *object.Environment) object.Object {
 		return evalProgram(node, environment)
 
 	case *ast.BlockStatement:
-		return evalStatements(node, environment)
+		return evalBlockStatements(node, environment.Extend())
 
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, environment)
@@ -107,7 +107,7 @@ func evalProgram(program *ast.Program, environment *object.Environment) object.O
 	return result
 }
 
-func evalStatements(blockStatement *ast.BlockStatement, environment *object.Environment) object.Object {
+func evalBlockStatements(blockStatement *ast.BlockStatement, environment *object.Environment) object.Object {
 	var result object.Object
 
 	for _, statement := range blockStatement.Statements {
