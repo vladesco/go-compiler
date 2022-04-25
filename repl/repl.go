@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compiler/evaluator"
 	"compiler/lexer"
+	"compiler/object"
 	"compiler/parser"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ const PROMPT = ">>"
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner((in))
+	environment := object.NewEnvironment()
 
 	for {
 		fmt.Print(PROMPT)
@@ -32,6 +34,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		fmt.Print(evaluator.Eval(program), "\n")
+		fmt.Print(evaluator.Eval(program, environment), "\n")
 	}
 }
