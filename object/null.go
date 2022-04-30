@@ -2,10 +2,10 @@ package object
 
 type Null struct{}
 
-func (null *Null) Inspect() string {
+func (nullObj *Null) Inspect() string {
 	return "null"
 }
 
-func (null *Null) GetObjectType() ObjectType {
+func (nullObj *Null) GetObjectType() ObjectType {
 	return NULL_OBJ
 }

@@ -27,6 +27,9 @@ func Eval(node ast.Node, environment *object.Environment) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
+
 	case *ast.Boolean:
 		return convertBoolToBooleanObject(node.Value)
 
@@ -219,10 +222,16 @@ func evalMinusPrefixOperatorExpression(argument object.Object) object.Object {
 }
 
 func evalInfixExpression(operator string, firstArgument, secondArgument object.Object) object.Object {
+	firstArgumentType := firstArgument.GetObjectType()
+	secondArgumentType := secondArgument.GetObjectType()
+
 	switch {
 
-	case firstArgument.GetObjectType() == object.INTEGER_OBJ && secondArgument.GetObjectType() == object.INTEGER_OBJ:
+	case firstArgumentType == object.INTEGER_OBJ && secondArgumentType == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, firstArgument, secondArgument)
+
+	case firstArgumentType == object.STRING_OBJ && secondArgumentType == object.STRING_OBJ:
+		return evalStringInfixExpression(operator, firstArgument, secondArgument)
 
 	case operator == "==":
 		return convertBoolToBooleanObject(firstArgument == secondArgument)
@@ -269,6 +278,17 @@ func evalIntegerInfixExpression(operator string, firstArgument, secondArgument o
 
 	}
 
+}
+
+func evalStringInfixExpression(operator string, firstArgument, secondArgument object.Object) object.Object {
+	firstValue := firstArgument.(*object.String).Value
+	secondValue := secondArgument.(*object.String).Value
+
+	if operator == "+" {
+		return &object.String{Value: firstValue + secondValue}
+	}
+
+	return newError(fmt.Sprintf("unknown infix operator %s", operator))
 }
 
 func evalIfExpression(argument *ast.IfExpression, environment *object.Environment) object.Object {

@@ -60,6 +60,11 @@ func (lexer *Lexer) ReadNextToken() token.Token {
 	case 0:
 		nextToken = token.New(token.EOF, "")
 
+	case '"':
+		lexer.readNextChar()
+		nextToken = token.New(token.STRING, lexer.readTokenValue(helpers.IsStringLetter))
+		lexer.readNextChar()
+
 	case '=':
 		if lexer.peekChar() == '=' {
 			lexer.readNextChar()

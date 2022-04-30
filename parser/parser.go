@@ -199,6 +199,15 @@ func (parser *Parser) parseBoolean() ast.Expression {
 	return expression
 }
 
+func (parser *Parser) parseString() ast.Expression {
+	expression := &ast.StringLiteral{
+		BaseNode: ast.BaseNode{Token: parser.currentToken},
+		Value:    parser.currentToken.Literal,
+	}
+
+	return expression
+}
+
 func (parser *Parser) parseGroupedExpression() ast.Expression {
 	parser.readNextToken()
 	expression := parser.parseExpression(LOWEST)
@@ -464,6 +473,7 @@ func (parser *Parser) initialize() {
 	parser.registerPrefixParseFn(token.INT, parser.parseIntegerLiteral)
 	parser.registerPrefixParseFn(token.FALSE, parser.parseBoolean)
 	parser.registerPrefixParseFn(token.TRUE, parser.parseBoolean)
+	parser.registerPrefixParseFn(token.STRING, parser.parseString)
 	parser.registerPrefixParseFn(token.LPAREN, parser.parseGroupedExpression)
 	parser.registerPrefixParseFn(token.IF, parser.parseIfExpression)
 	parser.registerPrefixParseFn(token.FUNCTION, parser.parseFunctionLiteral)

@@ -6,10 +6,10 @@ type Boolean struct {
 	Value bool
 }
 
-func (boolean *Boolean) Inspect() string {
-	return fmt.Sprintf("%t", boolean.Value)
+func (booleanObj *Boolean) Inspect() string {
+	return fmt.Sprintf("%t", booleanObj.Value)
 }
 
-func (boolean *Boolean) GetObjectType() ObjectType {
+func (booleanObj *Boolean) GetObjectType() ObjectType {
 	return BOOLEAN_OBJ
 }

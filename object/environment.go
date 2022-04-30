@@ -11,25 +11,25 @@ func NewEnvironment() *Environment {
 	}
 }
 
-func (environment *Environment) Get(name string) (Object, bool) {
-	value, exist := environment.store[name]
+func (environmentObj *Environment) Get(name string) (Object, bool) {
+	value, exist := environmentObj.store[name]
 
-	if !exist && environment.outer != nil {
-		return environment.outer.Get(name)
+	if !exist && environmentObj.outer != nil {
+		return environmentObj.outer.Get(name)
 	}
 
 	return value, exist
 }
 
-func (environment *Environment) Set(name string, value Object) Object {
-	environment.store[name] = value
+func (environmentObj *Environment) Set(name string, value Object) Object {
+	environmentObj.store[name] = value
 
 	return value
 }
 
-func (environment *Environment) Extend() *Environment {
-	extendedEnvironemt := NewEnvironment()
-	extendedEnvironemt.outer = environment
+func (environmentObj *Environment) Extend() *Environment {
+	extendedEnvironemtObj := NewEnvironment()
+	extendedEnvironemtObj.outer = environmentObj
 
-	return extendedEnvironemt
+	return extendedEnvironemtObj
 }

@@ -4,10 +4,10 @@ type ReturnValue struct {
 	Value Object
 }
 
-func (returnValue *ReturnValue) Inspect() string {
-	return returnValue.Value.Inspect()
+func (returnValueObj *ReturnValue) Inspect() string {
+	return returnValueObj.Value.Inspect()
 }
 
-func (returnValue *ReturnValue) GetObjectType() ObjectType {
+func (returnValueObj *ReturnValue) GetObjectType() ObjectType {
 	return RETURN_VALUE_OBJ
 }
