@@ -41,30 +41,31 @@ func Eval(node ast.Node, environment *object.Environment) object.Object {
 		}
 
 	case *ast.CallExpression:
-		extendedEnvironment := environment.Extend()
-		fn := Eval(node.Function, extendedEnvironment)
+		fn := Eval(node.Function, environment)
 
 		if isError(fn) {
 			return fn
 		}
 
-		function, ok := fn.(*object.Function)
+		switch fn := fn.(type) {
+		case *object.Function:
+			{
+				extendedEnvironment, environmentError := createFunctionEnvironment(node.Arguments, fn.Parameters, environment)
+				if environmentError != nil {
+					return environmentError
+				}
 
-		if !ok {
-			return newError(fmt.Sprintf("not a function: %s", function.GetObjectType()))
+				return unwrapReturnValue(evalBlockStatements(fn.Body, extendedEnvironment))
+			}
+
+		case *object.Builtin:
+			{
+				return fn.Fn(evalArguments(node.Arguments, environment)...)
+			}
+
+		default:
+			return newError(fmt.Sprintf("not a function: %s", fn.GetObjectType()))
 		}
-
-		arguments := evalArguments(node.Arguments, extendedEnvironment)
-
-		if len(arguments) == 1 && isError(arguments[0]) {
-			return arguments[0]
-		}
-
-		for index, argument := range arguments {
-			extendedEnvironment.Set(function.Parameters[index].Value, argument)
-		}
-
-		return unwrapReturnValue(evalBlockStatements(function.Body, extendedEnvironment))
 
 	case *ast.LetStatement:
 		value := Eval(node.Value, environment)
@@ -80,6 +81,10 @@ func Eval(node ast.Node, environment *object.Environment) object.Object {
 
 		if exist {
 			return value
+		}
+
+		if builtIn, exist := builtins[node.Value]; exist {
+			return builtIn
 		}
 
 		return newError(fmt.Sprintf("variable doesn`t exist %s", node.Value))
@@ -307,6 +312,21 @@ func evalIfExpression(argument *ast.IfExpression, environment *object.Environmen
 	}
 
 	return NULL
+}
+
+func createFunctionEnvironment(arguments []ast.Expression, parameters []*ast.Identifier, environment *object.Environment) (*object.Environment, object.Object) {
+	extendedEnvironment := environment.Extend()
+	evaledArguments := evalArguments(arguments, extendedEnvironment)
+
+	if len(evaledArguments) == 1 && isError(evaledArguments[0]) {
+		return extendedEnvironment, evaledArguments[0]
+	}
+
+	for index, argument := range evaledArguments {
+		extendedEnvironment.Set(parameters[index].Value, argument)
+	}
+
+	return extendedEnvironment, nil
 }
 
 func newError(errorMessage string) object.Object {
